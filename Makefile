@@ -21,7 +21,7 @@ CFLAGS+=$(INCLUDES)
 LDFLAGS+=$(CFLAGS)
 
 .PHONY: default
-default: $(BIN)
+default: $(BIN) README.md
 
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -32,3 +32,6 @@ $(BIN): $(OBJ)
 .PHONY: clean
 clean:
 	rm -rf $(OBJ)
+
+README.md: src/cnfparse.h
+	stddoc < src/cnfparse.h > README.md
