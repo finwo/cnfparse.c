@@ -148,7 +148,6 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
         exit(1);
     }
 
-    printf("char: %c\n", c);
   }
 
 cnf_directive_read_finalize:
