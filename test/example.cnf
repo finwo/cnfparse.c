@@ -1,0 +1,10 @@
+# this is a comment line
+add 10.0.0.0/8 via 192.168.1.1
+   del    10.1.0.0/16   
+
+set note "a # b" and "a \" b"
+op arg # trailing comment
+route 172.16.0.0/12 #comment with no space
+
+   
+final one two three

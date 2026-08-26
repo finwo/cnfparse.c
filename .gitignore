@@ -1,3 +1,5 @@
 *.o
 /lib/
 /cnfparse_test
+.cache/
+compile_commands.json
