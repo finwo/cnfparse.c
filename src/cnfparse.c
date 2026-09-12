@@ -39,7 +39,7 @@ void cnf_directive_free(struct cnf_directive *subject) {
   if (subject->name) {
     free(subject->name);
   }
-  for(int i = 0 ; i < subject->argc ; i++) {
+  for(size_t i = 0 ; i < subject->argc ; i++) {
     free(subject->argv[i]);
   }
   if (subject->argv) {
