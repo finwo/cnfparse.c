@@ -52,7 +52,13 @@ void cnf_directive_free(struct cnf_directive *subject);
 <details>
   <summary>cnf_directive_read(fd)</summary>
 
-  Returns a single directive (or NULL) from the file descriptor
+  Returns a single directive (or NULL) from the file descriptor.
+
+  Arguments are separated by whitespace. Double-quoted strings may contain
+  spaces and support the escapes `\n`, `\t`, `\r`, `\\`, `\"` and `\'`;
+  unknown escapes keep the character verbatim, and `\0` becomes a literal
+  `0` (with a warning on stderr). Single-quoted strings are literal except
+  for `\'`.
 
 ```C
 struct cnf_directive * cnf_directive_read(FILE *fd);

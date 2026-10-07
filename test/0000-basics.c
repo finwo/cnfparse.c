@@ -131,6 +131,107 @@ void test_escaped_quote_in_double() {
   fclose(fd);
 }
 
+void test_escaped_newline_in_double_quotes() {
+  FILE *fd = open_string("op \"a\\nb\"\n"); // config text: op "a\nb"
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with escaped newline returned", dir != NULL);
+  ASSERT_STRING_EQUALS("op", dir->name);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("a\nb", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_escaped_tab_cr_in_double_quotes() {
+  FILE *fd = open_string("op \"a\\tb\\rc\"\n"); // config text: op "a\tb\rc"
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with escaped tab/cr returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("a\tb\rc", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_escaped_backslash_in_double_quotes() {
+  FILE *fd = open_string("op \"a\\\\b\"\n"); // config text: op "a\\b"
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with escaped backslash returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("a\\b", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_unknown_escape_kept_verbatim() {
+  FILE *fd = open_string("op \"a\\zb\"\n"); // config text: op "a\zb"
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with unknown escape returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("azb", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_null_escape_becomes_zero() {
+  FILE *fd = open_string("op \"a\\0b\"\n"); // config text: op "a\0b"
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with null escape returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("a0b", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_single_quotes_keep_backslash_literal() {
+  FILE *fd = open_string("op 'a\\nb'\n"); // config text: op 'a\nb'
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with literal backslash in single quotes returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("a\\nb", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_escaped_single_quote_in_single_quotes() {
+  FILE *fd = open_string("op 'it\\'s'\n"); // config text: op 'it\'s'
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with escaped single quote returned", dir != NULL);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("it's", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_empty_double_quote_first_token() {
+  FILE *fd = open_string("\"\" foo\n"); // config text: "" foo
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with empty first token returned", dir != NULL);
+  ASSERT_STRING_EQUALS("", dir->name);
+  ASSERT_EQUALS(1, dir->argc);
+  ASSERT_STRING_EQUALS("foo", dir->argv[0]);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
+void test_empty_double_quote_alone() {
+  FILE *fd = open_string("\"\"\n"); // config text: ""
+  ASSERT("fmemopen succeeds", fd != NULL);
+  struct cnf_directive *dir = cnf_directive_read(fd);
+  ASSERT("directive with only an empty token returned", dir != NULL);
+  ASSERT_STRING_EQUALS("", dir->name);
+  ASSERT_EQUALS(0, dir->argc);
+  cnf_directive_free(dir);
+  fclose(fd);
+}
+
 void test_hash_in_quoted_string() {
   FILE *fd = open_string("set note \"a # b\"\n");
   ASSERT("fmemopen succeeds", fd != NULL);
@@ -242,6 +343,15 @@ int main(int argc, const char *argv[]) {
   RUN(test_quoted_double_args);
   RUN(test_quoted_single_args);
   RUN(test_escaped_quote_in_double);
+  RUN(test_escaped_newline_in_double_quotes);
+  RUN(test_escaped_tab_cr_in_double_quotes);
+  RUN(test_escaped_backslash_in_double_quotes);
+  RUN(test_unknown_escape_kept_verbatim);
+  RUN(test_null_escape_becomes_zero);
+  RUN(test_single_quotes_keep_backslash_literal);
+  RUN(test_escaped_single_quote_in_single_quotes);
+  RUN(test_empty_double_quote_first_token);
+  RUN(test_empty_double_quote_alone);
   RUN(test_hash_in_quoted_string);
   RUN(test_trailing_comment);
   RUN(test_comment_no_space);

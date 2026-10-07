@@ -4,6 +4,7 @@ extern "C" {
 
 // includes/system {{{
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 // }}}
@@ -16,13 +17,32 @@ extern "C" {
 
 #define STATE_BLANK   0
 #define STATE_COMMENT 1
-#define STATE_QUOTE   2
-#define STATE_WORD    3
+#define STATE_DQUOTE  2
+#define STATE_SQUOTE  3
+#define STATE_WORD    4
+
+// cnf_unescape(c) {{{
+// Unknown escapes keep the character verbatim
+static int cnf_unescape(char c) {
+  switch (c) {
+    case 'n':  return '\n';
+    case 't':  return '\t';
+    case 'r':  return '\r';
+    case '\\': return '\\';
+    case '"':  return '"';
+    case '\'': return '\'';
+    case '0':
+      fprintf(stderr, "cnfparse: warning: \\0 becomes '0', not a null byte\n");
+      return '0';
+    default:   return c;
+  }
+}
+// }}}
 
 // cnf_directive_append(subject,value,len) {{{
 // caller frees
 void cnf_directive_append(struct cnf_directive *subject, char *value, size_t len) {
-  if (!value) return;
+  if (!value) value = ""; // len is leading, not value
   char *val = calloc(1, len+1);
   memcpy(val, value, len);
   if (!subject->name) {
@@ -57,7 +77,6 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
 
   int state = STATE_BLANK;
   char c;
-  char quote;
   bool escape;
 
   while(!feof(fd)) {
@@ -80,9 +99,11 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
             state = STATE_COMMENT;
             continue;
           case '"':
+            state = STATE_DQUOTE;
+            escape = false;
+            continue;
           case '\'':
-            state = STATE_QUOTE;
-            quote = c;
+            state = STATE_SQUOTE;
             escape = false;
             continue;
           default:
@@ -103,9 +124,9 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
             continue;
         }
         break;
-      case STATE_QUOTE:
+      case STATE_DQUOTE:
         if (escape) {
-          buf_append_byte(acc, c);
+          buf_append_byte(acc, cnf_unescape(c));
           escape = false;
           continue;
         }
@@ -113,7 +134,7 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
           escape = true;
           continue;
         }
-        if (c == quote) {
+        if (c == '"') {
           cnf_directive_append(output, acc->dat, acc->len);
           state = STATE_BLANK;
           memset(acc->dat, 0, acc->cap);
@@ -121,7 +142,32 @@ struct cnf_directive * cnf_directive_read(FILE *fd) {
           continue;
         }
         buf_append_byte(acc, c);
-        continue;;
+        continue;
+      case STATE_SQUOTE:
+        if (escape) {
+          // only \' is an escape inside single quotes; any other backslash stays literal
+          if (c == '\'') {
+            buf_append_byte(acc, '\'');
+          } else {
+            buf_append_byte(acc, '\\');
+            buf_append_byte(acc, c);
+          }
+          escape = false;
+          continue;
+        }
+        if (c == '\\') {
+          escape = true;
+          continue;
+        }
+        if (c == '\'') {
+          cnf_directive_append(output, acc->dat, acc->len);
+          state = STATE_BLANK;
+          memset(acc->dat, 0, acc->cap);
+          acc->len = 0;
+          continue;
+        }
+        buf_append_byte(acc, c);
+        continue;
       case STATE_WORD:
         switch(c) {
           case ' ':
