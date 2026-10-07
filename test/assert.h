@@ -8,7 +8,7 @@
 ///
 /// - Single header file, no other library dependencies
 /// - Simple ANSI C. The library should work with virtually every C(++) compiler on
-///   virtually any playform
+///   virtually any platform
 /// - Reporting of assertion failures, including the expression and location of the
 ///   failure
 /// - Stops test on first failed assertion

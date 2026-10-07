@@ -32,7 +32,6 @@ default: $(BIN) README.md
 $(BIN): $(OBJ) $(EXAMPLE_SRC:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $@
 
-# Test targets — each file is compiled independently and run
 $(TESTS): $(OBJ) $(TESTS:=.c)
 	$(CC) $@.c $(SRC) -I test $(CFLAGS) -o $@
 

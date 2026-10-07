@@ -3,7 +3,7 @@ finwo/cnfparse
 
 > Small library to make config parsing easier
 
-This library makes use of [dep](https://github.com/finwo/dep) to manage it's
+This library makes use of [dep](https://github.com/finwo/dep) to manage its
 dependencies and exports.
 
 Installation
